@@ -2,52 +2,56 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/friend_list_header"
     android:layout_margin="15dp">
 
     <TextView
-        android:id="@+id/friend_name"
+        android:id="@+id/friend_name_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:layout_weight="1"
         android:gravity="center"
+        android:text="朋友称呼"
         android:textColor="#fff"/>
 
     <TextView
-        android:id="@+id/contact_count"
+        android:id="@+id/contact_count_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_weight="1"
         android:gravity="center"
+        android:text="联系次数"
         android:textColor="#fff"/>
 
     <TextView
-        android:id="@+id/friend_tag"
+        android:id="@+id/friend_tag_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_weight="1"
         android:gravity="center"
+        android:text="朋友标签"
         android:textColor="#fff"/>
 
-    <Button
-        android:id="@+id/incr_contact"
+    <TextView
+        android:id="@+id/incr_contact_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="加1"
-        android:textColor="#F44336"/>
+        android:text="操作"
+        android:textColor="#fff"/>
 
-    <Button
-        android:id="@+id/decr_contact"
+    <TextView
+        android:id="@+id/decr_contact_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="减1"
-        android:textColor="#2196F3"/>
+        android:text="操作"
+        android:textColor="#fff"/>
 </LinearLayout>

@@ -1,15 +1,24 @@
 package com.socialnet.android;
 
+import static java.security.AccessController.getContext;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -18,6 +27,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.socialnet.android.adapter.FriendItemAdapter;
 import com.socialnet.android.gson.ContactInfo;
 import com.socialnet.android.gson.ContactRecord;
 import com.socialnet.android.gson.FriendInfo;
@@ -54,6 +64,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView friendTag;
     private TextView contactCount;
 
+    private ListView listView;
+    private List<FriendItem> dataList = new ArrayList<>();
+    private FriendItemAdapter adapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         bingPicImg = findViewById(R.id.bing_pic_img);
-        socialNetLayout = findViewById(R.id.socialnet_layout);
+//        socialNetLayout = findViewById(R.id.socialnet_layout);
         pageTitle = findViewById(R.id.page_title);
 
         // 记录表
@@ -77,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         toPerson = findViewById(R.id.to_person);
 
         // 朋友表
-        friendArea = findViewById(R.id.friend_area);
+//        friendArea = findViewById(R.id.friend_area);
         friendName = findViewById(R.id.friend_name);
         friendTag = findViewById(R.id.friend_tag);
         contactCount = findViewById(R.id.contact_count);
@@ -110,27 +124,57 @@ public class MainActivity extends AppCompatActivity {
                 recordArea.addView(view);
             }
         }
-        FriendInfo friendInfo = statFriendInfo(contactInfo);
-        if (friendInfo != null) {
-            for (FriendItem record : friendInfo.getFriendItemList()) {
-                View view = LayoutInflater.from(this).inflate(R.layout.friend_item, friendArea, false);
-                TextView friendName = view.findViewById(R.id.friend_name);
-                TextView count = view.findViewById(R.id.contact_count);
-                TextView tag = view.findViewById(R.id.friend_tag);
-                friendName.setText(record.getFriendName());
-                count.setText(String.format("%d", record.getCount()));
-                tag.setText(record.getFriendTag());
-                friendArea.addView(view);
-            }
-        }
+        ListView friendListView = findViewById(R.id.friend_list);
+//        titleText = (TextView) friendListView.findViewById(R.id.);
+//        backButton = (Button) friendListView.findViewById(R.id.back_button);
+        listView = (ListView) friendListView.findViewById(R.id.friend_list);
+        dataList = getFriendDataList();
+        adapter = new FriendItemAdapter(getBaseContext(), R.layout.friend_item, dataList);
+
+        View header = LayoutInflater.from(this).inflate(R.layout.friend_list_header, listView, false);
+        listView.addHeaderView(header, null, false);
+        listView.setAdapter(adapter);
+        fixListViewHeight(listView);
+
+        // 按钮动作
+//        listView.getOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//
+//            }
+//        });
     }
 
-    private FriendInfo statFriendInfo(ContactInfo contactInfo) {
+    private void fixListViewHeight(ListView listView) {
+        ListAdapter adapter = listView.getAdapter();
+        int totalHeight = 0;
+        if (adapter == null || adapter.getCount() <= 0) {
+            return;
+        }
+        for (int i = 0; i < adapter.getCount(); i++) {
+            View item = adapter.getView(i, null, listView);
+            item.measure(0, 0);
+            totalHeight += item.getMeasuredHeight();
+        }
+        ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+        layoutParams.height = totalHeight + (listView.getDividerHeight() * (adapter.getCount() - 1));
+        listView.setLayoutParams(layoutParams);
+    }
+
+    private List<FriendItem> getFriendDataList() {
+        FriendInfo friendInfo = statFriendInfo();
+        return new ArrayList<>(friendInfo.getFriendItemList());
+    }
+
+    private FriendInfo statFriendInfo() {
         FriendInfo friendInfo = new FriendInfo();
         List<FriendItem> itemList = new ArrayList<>();
 
-        itemList.add(new FriendItem.Builder().friendName("张三").count(13).friendTag("亲人").build());
-        itemList.add(new FriendItem.Builder().friendName("李四").count(1).friendTag("朋友").build());
+        itemList.add(new FriendItem.Builder().friendName("张三").count("13").friendTag("亲人").build());
+        itemList.add(new FriendItem.Builder().friendName("李四").count("1").friendTag("朋友").build());
+        for (int i = 0; i < 10; i++) {
+            itemList.add(new FriendItem.Builder().friendName("李四").count("1").friendTag("朋友").build());
+        }
         friendInfo.setFriendItemList(itemList);
         return friendInfo;
     }

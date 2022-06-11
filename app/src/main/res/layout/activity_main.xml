@@ -32,6 +32,7 @@
             <include layout="@layout/record_area" />
 
             <include layout="@layout/friend_area" />
+
         </LinearLayout>
 
     </ScrollView>
