@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="../../Library/Android/sdk/platforms/android-32/data/res/layout/simple_list_item_1.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/activity_weather.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/aqi.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/choose_area.xml" value="0.1515625" />
+        <entry key="app/src/main/res/layout/now.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/one_sentence.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/suggestion.xml" value="0.13958333333333334" />
+        <entry key="app/src/main/res/layout/title.xml" value="0.1" />
+      </map>
+    </option>
+  </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK" />
+</project>
