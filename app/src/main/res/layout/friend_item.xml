@@ -22,14 +22,14 @@
         android:gravity="center"
         android:textColor="#fff"/>
 
-    <TextView
-        android:id="@+id/friend_tag"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:textColor="#fff"/>
+<!--    <TextView-->
+<!--        android:id="@+id/friend_tag"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:layout_weight="1"-->
+<!--        android:gravity="center"-->
+<!--        android:textColor="#fff"/>-->
 
     <Button
         android:id="@+id/incr_contact"
@@ -39,6 +39,7 @@
         android:layout_weight="1"
         android:gravity="center"
         android:text="加1"
+        android:focusable="true"
         android:textColor="#F44336"/>
 
     <Button
@@ -49,5 +50,6 @@
         android:layout_weight="1"
         android:gravity="center"
         android:text="减1"
+        android:focusable="true"
         android:textColor="#2196F3"/>
 </LinearLayout>

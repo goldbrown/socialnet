@@ -1,9 +1,8 @@
 package com.socialnet.android.gson;
 
-import java.util.Date;
 
 public class ContactRecord {
-    private String fromPerson;
+//    private String fromPerson = "";
     private String toPerson;
     private String date;
 
@@ -12,10 +11,10 @@ public class ContactRecord {
         public Builder() {
             contactRecord = new ContactRecord();
         }
-        public Builder fromPerson(String from) {
-            contactRecord.setFromPerson(from);
-            return this;
-        }
+//        public Builder fromPerson(String from) {
+//            contactRecord.setFromPerson(from);
+//            return this;
+//        }
         public Builder toPerson(String to) {
             contactRecord.setToPerson(to);
             return this;
@@ -29,13 +28,13 @@ public class ContactRecord {
         }
     }
 
-    public String getFromPerson() {
-        return fromPerson;
-    }
-
-    public void setFromPerson(String fromPerson) {
-        this.fromPerson = fromPerson;
-    }
+//    public String getFromPerson() {
+//        return fromPerson;
+//    }
+//
+//    public void setFromPerson(String fromPerson) {
+//        this.fromPerson = fromPerson;
+//    }
 
     public String getToPerson() {
         return toPerson;

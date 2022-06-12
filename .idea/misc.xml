@@ -15,7 +15,8 @@
         <entry key="app/src/main/res/layout/now.xml" value="0.1" />
         <entry key="app/src/main/res/layout/one_sentence.xml" value="0.1" />
         <entry key="app/src/main/res/layout/record_area.xml" value="0.15" />
-        <entry key="app/src/main/res/layout/record_item.xml" value="0.15" />
+        <entry key="app/src/main/res/layout/record_item.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/record_list_header.xml" value="0.1" />
         <entry key="app/src/main/res/layout/suggestion.xml" value="0.13958333333333334" />
         <entry key="app/src/main/res/layout/title.xml" value="0.1" />
       </map>

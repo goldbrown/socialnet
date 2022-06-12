@@ -9,7 +9,7 @@
         android:id="@+id/friend_name_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
+        android:layout_gravity="center"
         android:layout_weight="1"
         android:gravity="center"
         android:text="朋友称呼"
@@ -25,15 +25,15 @@
         android:text="联系次数"
         android:textColor="#fff"/>
 
-    <TextView
-        android:id="@+id/friend_tag_header"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:text="朋友标签"
-        android:textColor="#fff"/>
+<!--    <TextView-->
+<!--        android:id="@+id/friend_tag_header"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:layout_weight="1"-->
+<!--        android:gravity="center"-->
+<!--        android:text="朋友标签"-->
+<!--        android:textColor="#fff"/>-->
 
     <TextView
         android:id="@+id/incr_contact_header"

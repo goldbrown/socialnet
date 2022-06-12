@@ -1,5 +1,6 @@
 package com.socialnet.android.gson;
 
+import java.util.Deque;
 import java.util.List;
 
 public class ContactInfo {

@@ -3,7 +3,9 @@ package com.socialnet.android.gson;
 public class FriendItem {
     private String friendName;
     private String count;
-    private String friendTag;
+    private int countInt;
+
+//    private String friendTag;
 
     public static class Builder {
         private FriendItem friendItem;
@@ -18,8 +20,8 @@ public class FriendItem {
             friendItem.setCount(count);
             return this;
         }
-        public FriendItem.Builder friendTag(String friendTag) {
-            friendItem.setFriendTag(friendTag);
+        public FriendItem.Builder countInt(int countInt) {
+            friendItem.setCountInt(countInt);
             return this;
         }
         public FriendItem build() {
@@ -43,11 +45,18 @@ public class FriendItem {
         this.count = count;
     }
 
-    public String getFriendTag() {
-        return friendTag;
+//    public String getFriendTag() {
+//        return friendTag;
+//    }
+//
+//    public void setFriendTag(String friendTag) {
+//        this.friendTag = friendTag;
+//    }
+    public int getCountInt() {
+        return countInt;
     }
 
-    public void setFriendTag(String friendTag) {
-        this.friendTag = friendTag;
+    public void setCountInt(int countInt) {
+        this.countInt = countInt;
     }
 }

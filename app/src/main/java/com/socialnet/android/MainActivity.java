@@ -1,21 +1,15 @@
 package com.socialnet.android;
 
-import static java.security.AccessController.getContext;
-
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
-import android.preference.PreferenceManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
+import android.widget.HeaderViewListAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
@@ -28,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.socialnet.android.adapter.FriendItemAdapter;
+import com.socialnet.android.adapter.RecordItemAdapter;
 import com.socialnet.android.gson.ContactInfo;
 import com.socialnet.android.gson.ContactRecord;
 import com.socialnet.android.gson.FriendInfo;
@@ -37,9 +32,19 @@ import com.socialnet.android.util.HttpUtil;
 import com.socialnet.android.util.Utility;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -54,19 +59,23 @@ public class MainActivity extends AppCompatActivity {
 
     private LinearLayout recordArea;
     private TextView dateText;
-    private TextView fromPerson;
+//    private TextView fromPerson;
     private TextView toPerson;
 
     private LinearLayout friendArea;
 
     private TextView oneSentenceText;
     private TextView friendName;
-    private TextView friendTag;
+//    private TextView friendTag;
     private TextView contactCount;
 
-    private ListView listView;
-    private List<FriendItem> dataList = new ArrayList<>();
-    private FriendItemAdapter adapter;
+    private ListView friendListView;
+    private List<FriendItem> friendItemList = new LinkedList<>();
+    private FriendItemAdapter friendItemAdapter;
+
+    private ListView recordListView;
+    private List<ContactRecord> contactRecordList = new LinkedList<>();
+    private RecordItemAdapter recordItemAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,15 +94,15 @@ public class MainActivity extends AppCompatActivity {
         pageTitle = findViewById(R.id.page_title);
 
         // 记录表
-        recordArea =findViewById(R.id.record_area);
+//        recordArea =findViewById(R.id.record_area);
         dateText = findViewById(R.id.date_text);
-        fromPerson = findViewById(R.id.from_person);
+//        fromPerson = findViewById(R.id.from_person);
         toPerson = findViewById(R.id.to_person);
 
         // 朋友表
 //        friendArea = findViewById(R.id.friend_area);
         friendName = findViewById(R.id.friend_name);
-        friendTag = findViewById(R.id.friend_tag);
+//        friendTag = findViewById(R.id.friend_tag);
         contactCount = findViewById(R.id.contact_count);
 
         // 每日一句
@@ -111,38 +120,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fillContactInfo() {
+        // 联系记录
+        recordListView = findViewById(R.id.record_list);
         ContactInfo contactInfo = getContactInfoFromDb(10);
         if (contactInfo != null) {
-            for (ContactRecord record : contactInfo.getContactRecords()) {
-                View view = LayoutInflater.from(this).inflate(R.layout.record_item, recordArea, false);
-                TextView dateText =  view.findViewById(R.id.date_text);
-                TextView fromPerson = view.findViewById(R.id.from_person);
-                TextView toPerson = view.findViewById(R.id.to_person);
-                dateText.setText(record.getDate());
-                fromPerson.setText(record.getFromPerson());
-                toPerson.setText(record.getToPerson());
-                recordArea.addView(view);
-            }
+            contactRecordList = contactInfo.getContactRecords();
+            recordItemAdapter = new RecordItemAdapter(MainActivity.this, R.layout.record_item, contactRecordList);
+
+            View header = LayoutInflater.from(this).inflate(R.layout.record_list_header, recordListView, false);
+            recordListView.addHeaderView(header, null, false);
+            recordListView.setAdapter(recordItemAdapter);
+            fixListViewHeight(recordListView);
         }
-        ListView friendListView = findViewById(R.id.friend_list);
-//        titleText = (TextView) friendListView.findViewById(R.id.);
-//        backButton = (Button) friendListView.findViewById(R.id.back_button);
-        listView = (ListView) friendListView.findViewById(R.id.friend_list);
-        dataList = getFriendDataList();
-        adapter = new FriendItemAdapter(getBaseContext(), R.layout.friend_item, dataList);
 
-        View header = LayoutInflater.from(this).inflate(R.layout.friend_list_header, listView, false);
-        listView.addHeaderView(header, null, false);
-        listView.setAdapter(adapter);
-        fixListViewHeight(listView);
+        // 朋友列表
+        friendListView = findViewById(R.id.friend_list);
+        friendItemList = calFriendDataList(contactInfo.getContactRecords());
+        if (CollectionUtil.isNotEmpty(friendItemList)) {
+            friendItemAdapter = new FriendItemAdapter(MainActivity.this, R.layout.friend_item, friendItemList);
+            View header = LayoutInflater.from(this).inflate(R.layout.friend_list_header, friendListView, false);
+            friendListView.addHeaderView(header, null, false);
+            friendListView.setAdapter(friendItemAdapter);
+            fixListViewHeight(friendListView);
+        }
 
-        // 按钮动作
-//        listView.getOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//
-//            }
-//        });
     }
 
     private void fixListViewHeight(ListView listView) {
@@ -161,36 +162,93 @@ public class MainActivity extends AppCompatActivity {
         listView.setLayoutParams(layoutParams);
     }
 
-    private List<FriendItem> getFriendDataList() {
-        FriendInfo friendInfo = statFriendInfo();
-        return new ArrayList<>(friendInfo.getFriendItemList());
-    }
-
-    private FriendInfo statFriendInfo() {
-        FriendInfo friendInfo = new FriendInfo();
-        List<FriendItem> itemList = new ArrayList<>();
-
-        itemList.add(new FriendItem.Builder().friendName("张三").count("13").friendTag("亲人").build());
-        itemList.add(new FriendItem.Builder().friendName("李四").count("1").friendTag("朋友").build());
-        for (int i = 0; i < 10; i++) {
-            itemList.add(new FriendItem.Builder().friendName("李四").count("1").friendTag("朋友").build());
+    private List<FriendItem> calFriendDataList(List<ContactRecord> contactRecords) {
+        List<FriendItem> list = new LinkedList<>();
+        if (CollectionUtil.isNotEmpty(contactRecords)) {
+            Map<String, Long> person2CountMap = contactRecords.stream().filter(Objects::nonNull)
+                    .collect(Collectors.groupingBy(item -> item.getToPerson(), Collectors.counting()));
+            for (Map.Entry<String, Long> entry : person2CountMap.entrySet()) {
+                int countInt = Math.toIntExact(entry.getValue());
+                list.add(new FriendItem.Builder().friendName(entry.getKey()).countInt(countInt).count(String.valueOf(countInt)).build());
+            }
+            list = list.stream().filter(Objects::nonNull).sorted(Comparator.comparing(FriendItem::getCountInt).reversed())
+                    .collect(Collectors.toCollection(LinkedList::new));
         }
-        friendInfo.setFriendItemList(itemList);
-        return friendInfo;
+        return list;
     }
 
     private ContactInfo getContactInfoFromDb(int limit) {
-        ContactInfo contactInfo = new ContactInfo();
-        List<ContactRecord> records = new ArrayList<>();
 
-        records.add(new ContactRecord.Builder().fromPerson("zhangsan").toPerson("lisi")
-                .date("2022-06-10 12:12:22").build());
-        records.add(new ContactRecord.Builder().fromPerson("lisi").toPerson("zhangsan")
+
+        ContactInfo contactInfo = new ContactInfo();
+        List<ContactRecord> records = new LinkedList<>();
+
+        records.add(new ContactRecord.Builder().toPerson("lisi")
+                .date("2022-06-12 12:12:22").build());
+        records.add(new ContactRecord.Builder().toPerson("zhangsan")
                 .date("2022-06-11 12:12:22").build());
-        records.add(new ContactRecord.Builder().fromPerson("zhangsan").toPerson("wangwu")
+        records.add(new ContactRecord.Builder().toPerson("wangwu")
                 .date("2022-06-11 12:12:22").build());
+        records.add(new ContactRecord.Builder().toPerson("wangwu")
+                .date("2022-06-12 12:12:22").build());
         contactInfo.setContactRecords(records);
         return contactInfo;
+    }
+
+    public void addRecordItem(ContactRecord contactRecord) {
+        LinkedList<ContactRecord> contactRecordList = (LinkedList<ContactRecord>) this.contactRecordList;
+        contactRecordList.addFirst(contactRecord);
+
+        this.friendItemList.clear();
+        this.friendItemList.addAll(calFriendDataList(contactRecordList));
+
+        // notify refresh view
+        friendListView = findViewById(R.id.friend_list);
+        if (friendListView.getAdapter() instanceof HeaderViewListAdapter) {
+            HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) friendListView.getAdapter();
+            friendItemAdapter = (FriendItemAdapter) headerViewListAdapter.getWrappedAdapter();
+            fixListViewHeight(this.friendListView);
+            friendItemAdapter.notifyDataSetChanged();
+        }
+
+        recordListView = findViewById(R.id.record_list);
+        if (recordListView.getAdapter() instanceof HeaderViewListAdapter) {
+            HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) recordListView.getAdapter();
+            recordItemAdapter = (RecordItemAdapter) headerViewListAdapter.getWrappedAdapter();
+            fixListViewHeight(this.recordListView);
+            recordItemAdapter.notifyDataSetChanged();
+        }
+    }
+
+
+    public void minusRecordItem(String friendName) {
+        Iterator<ContactRecord> iterator = contactRecordList.iterator();
+        while (iterator.hasNext()) {
+            ContactRecord next = iterator.next();
+            if (next.getToPerson().equals(friendName)) {
+                iterator.remove();
+                break;
+            }
+        }
+        this.friendItemList.clear();
+        this.friendItemList = calFriendDataList(contactRecordList);
+
+        // notify refresh view
+        friendListView = findViewById(R.id.friend_list);
+        if (friendListView.getAdapter() instanceof HeaderViewListAdapter) {
+            HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) friendListView.getAdapter();
+            friendItemAdapter = (FriendItemAdapter) headerViewListAdapter.getWrappedAdapter();
+            fixListViewHeight(this.friendListView);
+            friendItemAdapter.notifyDataSetChanged();
+        }
+
+        recordListView = findViewById(R.id.record_list);
+        if (recordListView.getAdapter() instanceof HeaderViewListAdapter) {
+            HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) recordListView.getAdapter();
+            recordItemAdapter = (RecordItemAdapter) headerViewListAdapter.getWrappedAdapter();
+            fixListViewHeight(this.recordListView);
+            recordItemAdapter.notifyDataSetChanged();
+        }
     }
 
     /**
