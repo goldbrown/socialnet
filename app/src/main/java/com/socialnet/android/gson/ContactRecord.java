@@ -1,12 +1,24 @@
 package com.socialnet.android.gson;
 
 
+import com.socialnet.android.db.ContactRecordEntity;
+
 import java.util.Date;
 
 public class ContactRecord {
     private String toPerson;
     private String dateStr;
     private Date date;
+
+    public static ContactRecordEntity convert2ContactRecordEntity(ContactRecord contactRecord) {
+        if (contactRecord == null) {
+            return null;
+        }
+        ContactRecordEntity contactRecordEntity = new ContactRecordEntity();
+        contactRecordEntity.setDateStr(contactRecord.getDateStr());
+        contactRecordEntity.setFriendName(contactRecord.getToPerson());
+        return contactRecordEntity;
+    }
 
     public static class Builder {
         private ContactRecord contactRecord;

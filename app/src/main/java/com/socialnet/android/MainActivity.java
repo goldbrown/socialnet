@@ -1,11 +1,18 @@
 package com.socialnet.android;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.HeaderViewListAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -26,6 +33,7 @@ import com.socialnet.android.gson.ContactRecord;
 import com.socialnet.android.gson.FriendItem;
 import com.socialnet.android.gson.OneSentenceResponse;
 import com.socialnet.android.util.HttpUtil;
+import com.socialnet.android.util.LogUtil;
 import com.socialnet.android.util.Utility;
 
 import org.litepal.crud.DataSupport;
@@ -41,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.collection.CollectionUtil;
@@ -63,6 +72,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView toPerson;
 
     private LinearLayout friendArea;
+    private Button addFriendBtn;
+    private Button removeFriendBtn;
+    private AlertDialog addFriendDialog;
 
     private TextView oneSentenceText;
     private TextView friendName;
@@ -102,6 +114,17 @@ public class MainActivity extends AppCompatActivity {
         dateText = findViewById(R.id.date_text);
 //        fromPerson = findViewById(R.id.from_person);
         toPerson = findViewById(R.id.to_person);
+        addFriendBtn = findViewById(R.id.add_friend);
+        removeFriendBtn = findViewById(R.id.remove_friend);
+        addFriendBtn.setOnClickListener(v -> {
+            Log.i("TAG", "onCreate: addFriendBtn");
+            displayAddForm();
+        });
+        removeFriendBtn.setOnClickListener(v -> {
+            Log.i("TAG", "onCreate: removeFriendBtn");
+            displayRemoveForm();
+        });
+//        addFriendDialog = findViewById(R.id.add_friend_dialog);
 
         // 朋友表
 //        friendArea = findViewById(R.id.friend_area);
@@ -124,6 +147,106 @@ public class MainActivity extends AppCompatActivity {
         // 设置每日一句
         requestOneSentence();
 
+    }
+
+    private void displayAddForm() {
+        AlertDialog show = null;
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.add_friend_layout, null);
+        Button btn = (Button) view.findViewById(R.id.add_friend_submit);
+        Button remBtn = (Button) view.findViewById(R.id.add_friend_cancel);
+
+        builder.setView(view);
+        AlertDialog dialog = builder.show();
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LogUtil.logi("添加朋友");
+                View parent = (View) v.getParent().getParent();
+                EditText editFriendView = parent.findViewById(R.id.add_edit_friend_name);
+                EditText editTagView = parent.findViewById(R.id.add_edit_friend_tag);
+
+                doAddFriend(Optional.ofNullable(editFriendView.getText()).filter(Objects::nonNull).map(Object::toString).orElse(""),
+                        Optional.ofNullable(editTagView.getText()).filter(Objects::nonNull).map(Object::toString).orElse(""));
+                dialog.dismiss();
+            }
+        });
+        remBtn.setOnClickListener(v -> {
+            dialog.dismiss();
+            LogUtil.logi("取消添加朋友");
+        });
+
+    }
+
+    private void doAddFriend(String friendName, String tag) {
+        FriendItem friendItem = new FriendItem();
+        if (StrUtil.isNotBlank(friendName)) {
+            friendItem.setFriendName(friendName);
+            friendItem.setCount("0");
+            friendItem.setCountInt(0);
+            friendItem.setAddTime(fastDateFormat.format(new Date()));
+            friendItemList.add(friendItem);
+            refreshFriendViewList();
+        }
+    }
+
+    private void displayRemoveForm() {
+        AlertDialog show = null;
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.remove_friend_layout, null);
+        Button addBtn = (Button) view.findViewById(R.id.remove_friend_submit);
+        Button remBtn = (Button) view.findViewById(R.id.remove_friend_cancel);
+
+        builder.setView(view);
+        AlertDialog dialog = builder.show();
+        addBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                View parent = (View) v.getParent().getParent();
+                EditText editFriendView = parent.findViewById(R.id.rem_edit_friend_name);
+                doRemFriend(Optional.ofNullable(editFriendView.getText()).filter(Objects::nonNull).map(Object::toString).orElse(""));
+                dialog.dismiss();
+                LogUtil.logi("删除朋友");
+            }
+        });
+        remBtn.setOnClickListener(v -> {
+            dialog.dismiss();
+            LogUtil.logi("取消删除朋友");
+        });
+    }
+
+    private void doRemFriend(String friendName) {
+        if (StrUtil.isEmpty(friendName)) {
+            return;
+        }
+        if (CollectionUtil.isNotEmpty(friendItemList)) {
+            Iterator<FriendItem> iterator = friendItemList.iterator();
+            while (iterator.hasNext()) {
+                FriendItem next = iterator.next();
+                if (friendName.equals(next.getFriendName())) {
+                    iterator.remove();
+                    break;
+                }
+            }
+        }
+        refreshFriendViewList();
+    }
+
+    @Override
+    protected void onPause() {
+        Log.i("TAG", "onPause: save data");
+        super.onPause();
+        // 持久化 子线程执行
+        DataSupport.deleteAll(ContactRecordEntity.class);
+        List<ContactRecordEntity> list = contactRecordList.stream().map(ContactRecord::convert2ContactRecordEntity)
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        DataSupport.saveAll(list);
+
+        DataSupport.deleteAll(FriendEntity.class);
+        List<FriendEntity> friendEntities = friendItemList.stream().map(FriendItem::convert2FriendEntity)
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        DataSupport.saveAll(friendEntities);
+        Log.i("TAG", "onPause: save data finish");
     }
 
     private List<FriendItem> getFriendsFromDb() {
@@ -168,7 +291,9 @@ public class MainActivity extends AppCompatActivity {
         if (contactRecordList != null) {
             recordItemAdapter = new RecordItemAdapter(MainActivity.this, R.layout.record_item, contactRecordList);
             View header = LayoutInflater.from(this).inflate(R.layout.record_list_header, recordListView, false);
-            recordListView.addHeaderView(header, null, false);
+            if (recordListView.getHeaderViewsCount() <= 0) {
+                recordListView.addHeaderView(header, null, false);
+            }
             recordListView.setAdapter(recordItemAdapter);
             fixListViewHeight(recordListView, contactRecordList.size());
         }
@@ -176,14 +301,19 @@ public class MainActivity extends AppCompatActivity {
         // 朋友列表
         friendListView = findViewById(R.id.friend_list);
         friendItemList = calFriendCountList();
-        if (CollectionUtil.isNotEmpty(friendItemList)) {
-            friendItemAdapter = new FriendItemAdapter(MainActivity.this, R.layout.friend_item, friendItemList);
-            View header = LayoutInflater.from(this).inflate(R.layout.friend_list_header, friendListView, false);
-            friendListView.addHeaderView(header, null, false);
-            friendListView.setAdapter(friendItemAdapter);
-            fixListViewHeight(friendListView, friendItemList.size());
-        }
+        refreshFriendViewList();
+    }
 
+    private void refreshFriendViewList() {
+        friendItemList = friendItemList.stream().filter(Objects::nonNull).sorted(Comparator.comparing(FriendItem::getCountInt).reversed())
+                .collect(Collectors.toCollection(ArrayList::new));
+        friendItemAdapter = new FriendItemAdapter(MainActivity.this, R.layout.friend_item, friendItemList);
+        View header = LayoutInflater.from(this).inflate(R.layout.friend_list_header, friendListView, false);
+        if (friendListView.getHeaderViewsCount() <= 0) {
+            friendListView.addHeaderView(header, null, false);
+        }
+        friendListView.setAdapter(friendItemAdapter);
+        fixListViewHeight(friendListView, friendItemList.size());
     }
 
     private void fixListViewHeight(ListView listView, int size) {
@@ -252,8 +382,9 @@ public class MainActivity extends AppCompatActivity {
     private List<ContactRecord> getContactInfoFromDb(int limit) {
         List<ContactRecordEntity> contactRecordEntities = DataSupport.findAll(ContactRecordEntity.class);
         if (CollectionUtil.isEmpty(contactRecordEntities)) {
-            List<ContactRecord> records = mockData();
-            return records;
+//            List<ContactRecord> records = mockData();
+//            return records;
+            return new ArrayList<>();
         }
         List<ContactRecord> records = new LinkedList<>();
         if (CollectionUtil.isNotEmpty(contactRecordEntities)) {

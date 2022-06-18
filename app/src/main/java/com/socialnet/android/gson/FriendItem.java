@@ -1,11 +1,26 @@
 package com.socialnet.android.gson;
 
-public class FriendItem {
+import com.socialnet.android.db.FriendEntity;
+
+import org.litepal.crud.DataSupport;
+
+public class FriendItem extends DataSupport {
     private String friendName;
     private String count;
     private int countInt;
+    private String addTime;
 
 //    private String friendTag;
+
+    public static FriendEntity convert2FriendEntity(FriendItem friendItem) {
+        if (friendItem == null) {
+            return null;
+        }
+        FriendEntity friendEntity = new FriendEntity();
+        friendEntity.setFriendName(friendItem.getFriendName());
+        friendEntity.setAddTime(friendItem.getAddTime());
+        return friendEntity;
+    }
 
     public static class Builder {
         private FriendItem friendItem;
@@ -58,5 +73,13 @@ public class FriendItem {
 
     public void setCountInt(int countInt) {
         this.countInt = countInt;
+    }
+
+    public String getAddTime() {
+        return addTime;
+    }
+
+    public void setAddTime(String addTime) {
+        this.addTime = addTime;
     }
 }

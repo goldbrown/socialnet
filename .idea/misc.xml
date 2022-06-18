@@ -6,10 +6,11 @@
         <entry key="../../Library/Android/sdk/platforms/android-32/data/res/layout/simple_list_item_1.xml" value="0.1" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="app/src/main/res/layout/activity_weather.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/add_friend_layout.xml" value="0.1" />
         <entry key="app/src/main/res/layout/aqi.xml" value="0.1" />
         <entry key="app/src/main/res/layout/choose_area.xml" value="0.1515625" />
         <entry key="app/src/main/res/layout/forecast_item.xml" value="0.15" />
-        <entry key="app/src/main/res/layout/friend_area.xml" value="0.159375" />
+        <entry key="app/src/main/res/layout/friend_area.xml" value="0.1" />
         <entry key="app/src/main/res/layout/friend_item.xml" value="0.1" />
         <entry key="app/src/main/res/layout/friend_list_header.xml" value="0.1" />
         <entry key="app/src/main/res/layout/now.xml" value="0.1" />
@@ -17,6 +18,7 @@
         <entry key="app/src/main/res/layout/record_area.xml" value="0.15" />
         <entry key="app/src/main/res/layout/record_item.xml" value="0.1" />
         <entry key="app/src/main/res/layout/record_list_header.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/remove_friend_layout.xml" value="0.10280797101449275" />
         <entry key="app/src/main/res/layout/suggestion.xml" value="0.13958333333333334" />
         <entry key="app/src/main/res/layout/title.xml" value="0.1" />
       </map>

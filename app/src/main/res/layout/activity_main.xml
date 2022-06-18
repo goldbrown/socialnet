@@ -29,9 +29,9 @@
 
             <include layout="@layout/one_sentence"/>
 
-            <include layout="@layout/record_area" />
-
             <include layout="@layout/friend_area" />
+
+            <include layout="@layout/record_area" />
 
         </LinearLayout>
 

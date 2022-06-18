@@ -1,6 +1,8 @@
 package com.socialnet.android.db;
 
-public class FriendEntity {
+import org.litepal.crud.DataSupport;
+
+public class FriendEntity extends DataSupport {
     private String friendName;
     private String addTime;
 
