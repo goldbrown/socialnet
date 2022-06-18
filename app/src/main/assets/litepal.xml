@@ -5,9 +5,11 @@
     <version value="1" />
 
     <list>
-        <mapping class="com.socialnet.android.db.Province" />
-        <mapping class="com.socialnet.android.db.City" />
-        <mapping class="com.socialnet.android.db.County" />
+<!--        <mapping class="com.socialnet.android.db.Province" />-->
+<!--        <mapping class="com.socialnet.android.db.City" />-->
+<!--        <mapping class="com.socialnet.android.db.County" />-->
+        <mapping class="com.socialnet.android.db.FriendEntity"/>
+        <mapping class="com.socialnet.android.db.ContactRecordEntity"/>
     </list>
 
 </litepal>

@@ -1,14 +1,11 @@
 package com.socialnet.android;
 
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.HeaderViewListAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -23,19 +20,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.socialnet.android.adapter.FriendItemAdapter;
 import com.socialnet.android.adapter.RecordItemAdapter;
-import com.socialnet.android.gson.ContactInfo;
+import com.socialnet.android.db.ContactRecordEntity;
+import com.socialnet.android.db.FriendEntity;
 import com.socialnet.android.gson.ContactRecord;
-import com.socialnet.android.gson.FriendInfo;
 import com.socialnet.android.gson.FriendItem;
 import com.socialnet.android.gson.OneSentenceResponse;
 import com.socialnet.android.util.HttpUtil;
 import com.socialnet.android.util.Utility;
 
+import org.litepal.crud.DataSupport;
+
 import java.io.IOException;
-import java.util.ArrayDeque;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Deque;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -45,6 +44,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.format.FastDateFormat;
 import cn.hutool.core.util.StrUtil;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -76,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
     private ListView recordListView;
     private List<ContactRecord> contactRecordList = new LinkedList<>();
     private RecordItemAdapter recordItemAdapter;
+//    private List<FriendEntity> friendEntities = new ArrayList<>();
+//    private List<ContactRecordEntity> contactRecordEntities = new ArrayList<>();
+
+    private FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,109 +117,179 @@ public class MainActivity extends AppCompatActivity {
         // 背景图
         loadBingPic();
 
+        // 从DB恢复数据
+        contactRecordList = getContactInfoFromDb(10);
+        friendItemList = getFriendsFromDb();
         fillContactInfo();
         // 设置每日一句
         requestOneSentence();
 
     }
 
+    private List<FriendItem> getFriendsFromDb() {
+        List<FriendItem> res = new ArrayList<>();
+        List<FriendEntity> friendEntities = DataSupport.findAll(FriendEntity.class);
+        if (CollectionUtil.isNotEmpty(friendEntities)) {
+            res = friendEntities.stream().map(item -> {
+                FriendItem friendItem = new FriendItem();
+                friendItem.setFriendName(item.getFriendName());
+                friendItem.setCount("0");
+                friendItem.setCountInt(0);
+                return friendItem;
+            }).collect(Collectors.toList());
+        }
+        return res;
+    }
+
+    private List<ContactRecord> mockData() {
+        List<ContactRecordEntity> res = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            ContactRecordEntity contactRecordEntity = new ContactRecordEntity();
+            contactRecordEntity.setDateStr(fastDateFormat.format(new Date()));
+            contactRecordEntity.setFriendName("zhangsan" + i);
+            res.add(contactRecordEntity);
+        }
+        return res.stream().map(item -> {
+            ContactRecord contactRecord = new ContactRecord();
+            contactRecord.setToPerson(item.getFriendName());
+            contactRecord.setDateStr(item.getDateStr());
+            try {
+                contactRecord.setDate(fastDateFormat.parse(item.getDateStr()));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            return contactRecord;
+        }).collect(Collectors.toList());
+    }
+
     private void fillContactInfo() {
         // 联系记录
         recordListView = findViewById(R.id.record_list);
-        ContactInfo contactInfo = getContactInfoFromDb(10);
-        if (contactInfo != null) {
-            contactRecordList = contactInfo.getContactRecords();
+        if (contactRecordList != null) {
             recordItemAdapter = new RecordItemAdapter(MainActivity.this, R.layout.record_item, contactRecordList);
-
             View header = LayoutInflater.from(this).inflate(R.layout.record_list_header, recordListView, false);
             recordListView.addHeaderView(header, null, false);
             recordListView.setAdapter(recordItemAdapter);
-            fixListViewHeight(recordListView);
+            fixListViewHeight(recordListView, contactRecordList.size());
         }
 
         // 朋友列表
         friendListView = findViewById(R.id.friend_list);
-        friendItemList = calFriendDataList(contactInfo.getContactRecords());
+        friendItemList = calFriendCountList();
         if (CollectionUtil.isNotEmpty(friendItemList)) {
             friendItemAdapter = new FriendItemAdapter(MainActivity.this, R.layout.friend_item, friendItemList);
             View header = LayoutInflater.from(this).inflate(R.layout.friend_list_header, friendListView, false);
             friendListView.addHeaderView(header, null, false);
             friendListView.setAdapter(friendItemAdapter);
-            fixListViewHeight(friendListView);
+            fixListViewHeight(friendListView, friendItemList.size());
         }
 
     }
 
-    private void fixListViewHeight(ListView listView) {
+    private void fixListViewHeight(ListView listView, int size) {
         ListAdapter adapter = listView.getAdapter();
         int totalHeight = 0;
-        if (adapter == null || adapter.getCount() <= 0) {
+        if (size <= 0) {
             return;
         }
-        for (int i = 0; i < adapter.getCount(); i++) {
-            View item = adapter.getView(i, null, listView);
-            item.measure(0, 0);
-            totalHeight += item.getMeasuredHeight();
+        for (int i = 0; i < size; i++) {
+            if (listView.getAdapter() instanceof HeaderViewListAdapter) {
+                HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) listView.getAdapter();
+                ListAdapter listAdapter = headerViewListAdapter.getWrappedAdapter();
+                View item = listAdapter.getView(i, null, listView);
+                item.measure(0, 0);
+                totalHeight += item.getMeasuredHeight();
+            } else {
+                View item = adapter.getView(i, null, listView);
+                item.measure(0, 0);
+                totalHeight += item.getMeasuredHeight();
+            }
         }
         ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-        layoutParams.height = totalHeight + (listView.getDividerHeight() * (adapter.getCount() - 1));
+        layoutParams.height = totalHeight + (listView.getDividerHeight() * (size)) + 20;
         listView.setLayoutParams(layoutParams);
     }
 
-    private List<FriendItem> calFriendDataList(List<ContactRecord> contactRecords) {
-        List<FriendItem> list = new LinkedList<>();
-        if (CollectionUtil.isNotEmpty(contactRecords)) {
-            Map<String, Long> person2CountMap = contactRecords.stream().filter(Objects::nonNull)
+    private List<FriendItem> calFriendCountList() {
+        Map<String, Long> mergedMap = new HashMap<>();
+        List<FriendItem> list = new ArrayList<>();
+        if (CollectionUtil.isNotEmpty(friendItemList)) {
+            for (FriendItem friendItem : friendItemList) {
+                mergedMap.put(friendItem.getFriendName(), 0L);
+            }
+        }
+        if (CollectionUtil.isNotEmpty(contactRecordList)) {
+            Map<String, Long> person2CountMap = contactRecordList.stream().filter(Objects::nonNull)
                     .collect(Collectors.groupingBy(item -> item.getToPerson(), Collectors.counting()));
-            for (Map.Entry<String, Long> entry : person2CountMap.entrySet()) {
+            mergedMap = mergeFriendMap(mergedMap, person2CountMap);
+        }
+        if (CollectionUtil.isNotEmpty(mergedMap)) {
+            for (Map.Entry<String, Long> entry : mergedMap.entrySet()) {
                 int countInt = Math.toIntExact(entry.getValue());
                 list.add(new FriendItem.Builder().friendName(entry.getKey()).countInt(countInt).count(String.valueOf(countInt)).build());
             }
-            list = list.stream().filter(Objects::nonNull).sorted(Comparator.comparing(FriendItem::getCountInt).reversed())
-                    .collect(Collectors.toCollection(LinkedList::new));
         }
+        // sort
+        list = list.stream().filter(Objects::nonNull).sorted(Comparator.comparing(FriendItem::getCountInt).reversed())
+                .collect(Collectors.toCollection(ArrayList::new));
         return list;
     }
 
-    private ContactInfo getContactInfoFromDb(int limit) {
+    private Map<String, Long> mergeFriendMap(Map<String, Long> friend2CountMap, Map<String, Long> person2CountMap) {
+        Map<String, Long> res = new HashMap<>(friend2CountMap);
+        for (Map.Entry<String, Long> entry : person2CountMap.entrySet()) {
+            if (res.containsKey(entry.getKey())) {
+                String name = entry.getKey();
+                res.put(name, res.get(name) + entry.getValue());
+            } else {
+                String name = entry.getKey();
+                res.put(name, entry.getValue());
+            }
+        }
+        return res;
+    }
 
-
-        ContactInfo contactInfo = new ContactInfo();
+    private List<ContactRecord> getContactInfoFromDb(int limit) {
+        List<ContactRecordEntity> contactRecordEntities = DataSupport.findAll(ContactRecordEntity.class);
+        if (CollectionUtil.isEmpty(contactRecordEntities)) {
+            List<ContactRecord> records = mockData();
+            return records;
+        }
         List<ContactRecord> records = new LinkedList<>();
-
-        records.add(new ContactRecord.Builder().toPerson("lisi")
-                .date("2022-06-12 12:12:22").build());
-        records.add(new ContactRecord.Builder().toPerson("zhangsan")
-                .date("2022-06-11 12:12:22").build());
-        records.add(new ContactRecord.Builder().toPerson("wangwu")
-                .date("2022-06-11 12:12:22").build());
-        records.add(new ContactRecord.Builder().toPerson("wangwu")
-                .date("2022-06-12 12:12:22").build());
-        contactInfo.setContactRecords(records);
-        return contactInfo;
+        if (CollectionUtil.isNotEmpty(contactRecordEntities)) {
+            for (ContactRecordEntity contactRecordEntity : contactRecordEntities) {
+                try {
+                    records.add(new ContactRecord.Builder().dateStr(contactRecordEntity.getDateStr())
+                            .date(fastDateFormat.parse(contactRecordEntity.getDateStr()))
+                            .toPerson(contactRecordEntity.getFriendName()).build());
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return records;
     }
 
     public void addRecordItem(ContactRecord contactRecord) {
-        LinkedList<ContactRecord> contactRecordList = (LinkedList<ContactRecord>) this.contactRecordList;
-        contactRecordList.addFirst(contactRecord);
+        this.contactRecordList.add(contactRecord);
+        this.contactRecordList.sort(Comparator.comparing(ContactRecord::getDate).reversed());
 
-        this.friendItemList.clear();
-        this.friendItemList.addAll(calFriendDataList(contactRecordList));
+        this.friendItemList = calFriendCountList();
 
         // notify refresh view
         friendListView = findViewById(R.id.friend_list);
         if (friendListView.getAdapter() instanceof HeaderViewListAdapter) {
             HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) friendListView.getAdapter();
-            friendItemAdapter = (FriendItemAdapter) headerViewListAdapter.getWrappedAdapter();
-            fixListViewHeight(this.friendListView);
-            friendItemAdapter.notifyDataSetChanged();
+            friendItemAdapter = new FriendItemAdapter(MainActivity.this, R.layout.friend_item, friendItemList);
+            friendListView.setAdapter(friendItemAdapter);
+            fixListViewHeight(this.friendListView, friendItemList.size());
         }
 
         recordListView = findViewById(R.id.record_list);
         if (recordListView.getAdapter() instanceof HeaderViewListAdapter) {
             HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) recordListView.getAdapter();
             recordItemAdapter = (RecordItemAdapter) headerViewListAdapter.getWrappedAdapter();
-            fixListViewHeight(this.recordListView);
+            fixListViewHeight(this.recordListView, contactRecordList.size());
             recordItemAdapter.notifyDataSetChanged();
         }
     }
@@ -230,23 +304,23 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-        this.friendItemList.clear();
-        this.friendItemList = calFriendDataList(contactRecordList);
 
         // notify refresh view
+        this.friendItemList = calFriendCountList();
         friendListView = findViewById(R.id.friend_list);
         if (friendListView.getAdapter() instanceof HeaderViewListAdapter) {
-            HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) friendListView.getAdapter();
-            friendItemAdapter = (FriendItemAdapter) headerViewListAdapter.getWrappedAdapter();
-            fixListViewHeight(this.friendListView);
-            friendItemAdapter.notifyDataSetChanged();
+//            HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) friendListView.getAdapter();
+//            friendItemAdapter = (FriendItemAdapter) headerViewListAdapter.getWrappedAdapter();
+            friendItemAdapter = new FriendItemAdapter(MainActivity.this, R.layout.friend_item, friendItemList);
+            friendListView.setAdapter(friendItemAdapter);
+            fixListViewHeight(this.friendListView, friendItemList.size());
         }
 
         recordListView = findViewById(R.id.record_list);
         if (recordListView.getAdapter() instanceof HeaderViewListAdapter) {
             HeaderViewListAdapter headerViewListAdapter = (HeaderViewListAdapter) recordListView.getAdapter();
             recordItemAdapter = (RecordItemAdapter) headerViewListAdapter.getWrappedAdapter();
-            fixListViewHeight(this.recordListView);
+            fixListViewHeight(this.recordListView, contactRecordList.size());
             recordItemAdapter.notifyDataSetChanged();
         }
     }
